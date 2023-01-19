@@ -1,19 +1,6 @@
 class MarioBigBlock extends tK_TitanBigRock
 	config(tk_Monsters);
 
-var config float UUSpeed;
-var config float UUMaxSpeed;
-var config float UUDamage;
-
-function PreBeginPlay()
-{
-	Super.PreBeginPlay();
-	Speed = UUSpeed;
-	MaxSpeed = UUMaxSpeed;
-	Damage = UUDamage;
-	SaveConfig();
-}
-
 simulated function PostBeginPlay()
 {
 	local vector Dir;
@@ -198,9 +185,6 @@ function SpawnChunks(int num)
 defaultproperties
 {
      Bounces=5
-	 UUSpeed=1300.000000
-	 UUMaxSpeed=2000.000000
-	 UUDamage=10000.000000
      Speed=1300.000000
      MaxSpeed=2000.000000
      Damage=10000.000000

@@ -1,14 +1,6 @@
 class MarioBiggerBlock Extends MarioBigBlock
 	config(tk_Monsters);
 
-function PreBeginPlay()
-{
-	Super.PreBeginPlay();
-	Speed = UUSpeed;
-	MaxSpeed = UUMaxSpeed;
-	SaveConfig();
-}
-
 function MakeSound()
 {
 	local float soundRad;
@@ -27,8 +19,6 @@ simulated function HitWall (vector HitNormal, actor Wall)
 
 defaultproperties
 {
-	 UUSpeed=1300.000000
-	 UUMaxSpeed=2000.000000
      Speed=1900.000000
      MaxSpeed=1900.000000
      StaticMesh=StaticMesh'tk_MarioLuigi.MarioLuigi.Pickups'

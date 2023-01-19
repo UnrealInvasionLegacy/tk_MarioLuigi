@@ -1,4 +1,4 @@
-class M_Mario extends Monster 
+class M_Mario extends tk_Monster 
 	config(tk_Monsters);
 
 #EXEC OBJ LOAD FILE="Resources/tk_MarioLuigi_rc.u" PACKAGE="tk_MarioLuigi"
@@ -15,14 +15,6 @@ var	rotator				mHitRot;
 var FireProperties RocketFireProperties;
 var class<Ammunition> RocketAmmoClass;
 var Ammunition RocketAmmo;
-var()  bool	bNoTelefrag; 
-var()	float	InvalidityMomentumSize;
-var() bool bNoCrushVehicle;
-var()  array<class<DamageType> >	ReducedDamTypes;
-var()  float	ReducedDamPct;
-var()  array<class<DamageType> >	WeakDamTypes;
-var()  float	WeakDamPct;
-var()  bool	bReduceDamPlayerNum;
 var		bool				bStomped,bThrowed;
 var		int					ThrowCount;
 
@@ -72,7 +64,7 @@ function PlayVictory()
 	Controller.bPreparingMove = true;
 	Acceleration = vect(0,0,0);
 	bShotAnim = true;
-    	PlaySound(Sound'mariofinish');
+    PlaySound(Sound'mariofinish');
 	SetAnimAction('gesture_cheer');
 	Controller.Destination = Location;
 	Controller.GotoState('TacticalMove','WaitForAnim');
@@ -150,8 +142,6 @@ function bool SameSpeciesAs(Pawn P)
 	return ( Monster(P) != none &&
 		(P.IsA('SMPTitan') || P.IsA('SMPQueen') || P.IsA('Monster')|| P.IsA('Skaarj') || P.IsA('SkaarjPupae') || P.IsA('LuciferBOSS')));
 }
-
-
 
 function RangedAttack(Actor A)
 {
