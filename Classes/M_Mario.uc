@@ -74,7 +74,7 @@ defaultproperties
 {
      Health=500
      ProjectileClass(0)=Class'tk_MarioLuigi.MarioProjectiles'
-     ProjectileClass(1)=Class'tk_MarioLuigi.MarioProjectiles'
+     ProjectileClass(1)=Class'tk_MarioLuigi.MushroomProjectiles'
      AimError=400
      RangedAttacks(0)="gesture_halt"
      RangedAttacks(1)="Weapon_Switch"

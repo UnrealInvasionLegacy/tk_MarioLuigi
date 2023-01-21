@@ -2,7 +2,7 @@ class MarioProjectiles extends Projectile
 	config(tk_Monsters);
 
 var byte Bounces;
-var StaticMesh ProjectileMesh[4];
+var array<StaticMesh> ProjectileMesh;
 
 replication
 {
@@ -23,7 +23,7 @@ simulated function PostBeginPlay()
 	DesiredRotation.Roll = Rotation.Roll + Rand(2000) - 1000;
 	DesiredRotation.Yaw = Rotation.Yaw + Rand(2000) - 1000;
 
-	SetStaticMesh(ProjectileMesh[Rand(4)]);
+	SetStaticMesh(ProjectileMesh[Rand(ProjectileMesh.Length)]);
 
 	if (FRand() < 0.5)
 		RotationRate.Pitch = Rand(180000);
@@ -141,9 +141,7 @@ function InitFrag(MarioProjectiles myParent, float Pscale)
 defaultproperties
 {
 	 ProjectileMesh(0)=StaticMesh'tk_MarioLuigi.MarioLuigi.pickups'
-	 ProjectileMesh(1)=StaticMesh'tk_MarioLuigi.MarioLuigi.greenshroom'
-	 ProjectileMesh(2)=StaticMesh'tk_MarioLuigi.MarioLuigi.redshroom'
-	 ProjectileMesh(3)=StaticMesh'tk_MarioLuigi.MarioLuigi.goldbricks'
+	 ProjectileMesh(1)=StaticMesh'tk_MarioLuigi.MarioLuigi.goldbricks'
      Bounces=5
      Speed=1300.000000
      MaxSpeed=2000.000000
