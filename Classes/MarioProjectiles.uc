@@ -3,6 +3,7 @@ class MarioProjectiles extends Projectile
 
 var byte Bounces;
 var array<StaticMesh> ProjectileMesh;
+var array<Texture> ProjectileSkin;
 
 replication
 {
@@ -24,6 +25,51 @@ simulated function PostBeginPlay()
 	DesiredRotation.Yaw = Rotation.Yaw + Rand(2000) - 1000;
 
 	SetStaticMesh(ProjectileMesh[Rand(ProjectileMesh.Length)]);
+
+	if (StaticMesh == ProjectileMesh[0]) //Coin
+	{
+		Skins[0] = ProjectileSkin[0];
+		SetDrawScale(1.300000);
+		SetCollisionSize(45.000000, 45.000000);
+	}
+	else if (StaticMesh == ProjectileMesh[1]) //PowBlock
+	{
+		Skins[0] = ProjectileSkin[1];
+		SetDrawScale(1.300000);
+		SetCollisionSize(45.000000, 45.000000);
+	}
+	else if (StaticMesh == ProjectileMesh[2]) //PowerStar
+	{
+		Skins[0] = ProjectileSkin[2];
+		SetDrawScale(1.300000);
+		SetCollisionSize(45.000000, 45.000000);
+	}
+	else if (StaticMesh == ProjectileMesh[3]) //QuestionBlock
+	{
+		Skins[0] = ProjectileSkin[3];
+		SetDrawScale(1.300000);
+		SetCollisionSize(45.000000, 45.000000);
+	}
+	else if (StaticMesh == ProjectileMesh[4]) //Mushroom
+	{
+		Skins[0] = ProjectileSkin[(Rand(3)+4)];
+
+		if (Skins[0] == ProjectileSkin[4]) //Red Mushroom
+		{
+			SetDrawScale(1.300000);
+			SetCollisionSize(45.000000, 45.000000);
+		}
+		else if (Skins[0] == ProjectileSkin[5]) //Green Mushroom
+		{
+			SetDrawScale(0.800000);
+        	SetCollisionSize(30.000000, 30.000000);
+		}
+		else if (Skins[0] == ProjectileSkin[6]) //Blue Mushroom
+		{
+			SetDrawScale(0.300000);
+        	SetCollisionSize(10.000000, 10.000000);
+		}
+	}
 
 	if (FRand() < 0.5)
 		RotationRate.Pitch = Rand(180000);
@@ -140,8 +186,18 @@ function InitFrag(MarioProjectiles myParent, float Pscale)
 
 defaultproperties
 {
-	 ProjectileMesh(0)=StaticMesh'tk_MarioLuigi.MarioLuigi.pickups'
-	 ProjectileMesh(1)=StaticMesh'tk_MarioLuigi.MarioLuigi.goldbricks'
+	 ProjectileMesh(0)=StaticMesh'tk_MarioLuigi.MarioLuigi.Coin'
+	 ProjectileMesh(1)=StaticMesh'tk_MarioLuigi.MarioLuigi.PowBlock'
+	 ProjectileMesh(2)=StaticMesh'tk_MarioLuigi.MarioLuigi.PowerStar'
+	 ProjectileMesh(3)=StaticMesh'tk_MarioLuigi.MarioLuigi.QuestionBlock'
+	 ProjectileMesh(4)=StaticMesh'tk_MarioLuigi.MarioLuigi.MarioMushroom'
+	 ProjectileSkin(0)=Texture'tk_MarioLuigi.MarioLuigi.CoinTex'
+     ProjectileSkin(1)=Texture'tk_MarioLuigi.MarioLuigi.PowBlockTex'
+     ProjectileSkin(2)=Texture'tk_MarioLuigi.MarioLuigi.PowerStarTex'
+     ProjectileSkin(3)=Texture'tk_MarioLuigi.MarioLuigi.QuestionBlockTex'
+	 ProjectileSkin(4)=Texture'tk_MarioLuigi.MarioLuigi.RedMushroomTex'
+     ProjectileSkin(5)=Texture'tk_MarioLuigi.MarioLuigi.GreenMushroomTex'
+     ProjectileSkin(6)=Texture'tk_MarioLuigi.MarioLuigi.BlueMushroomTex'
      Bounces=5
      Speed=1300.000000
      MaxSpeed=2000.000000
