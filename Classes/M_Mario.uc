@@ -12,6 +12,7 @@ var Sound FootStep[4];
 function PostBeginPlay()
 {
      Super.PostBeginPlay();
+     Health = HP;
      PlaySound(Sound'marioriff');
 }
 
@@ -24,7 +25,7 @@ function Notify_FireProjectile()
 	{
 		BoneLocation = GetBoneCoords('Bone_weapon');
 		FireStart = GetFireStart(X,Y,Z);
-		Spawn(ProjectileClass[Rand(2)],self,,BoneLocation.Origin,Controller.AdjustAim(SavedFireProperties,FireStart,AimError));
+		Spawn(ProjectileClass[Rand(ProjectileClass.Length)],self,,BoneLocation.Origin,Controller.AdjustAim(SavedFireProperties,FireStart,AimError));
 		PlaySound(FireSound,SLOT_Interact,255);
 	}
 }
@@ -73,8 +74,8 @@ simulated function RunStep()
 defaultproperties
 {
      Health=500
+     HP=500
      ProjectileClass(0)=Class'tk_MarioLuigi.MarioProjectiles'
-     ProjectileClass(1)=Class'tk_MarioLuigi.MarioProjectiles'
      AimError=400
      RangedAttacks(0)="gesture_halt"
      RangedAttacks(1)="Weapon_Switch"
@@ -156,9 +157,6 @@ defaultproperties
      IdleWeaponAnim="Idle_Rifle"
      IdleRestAnim="Idle_Rifle"
      IdleChatAnim="Idle_Rifle"
-     // LightHue=14
-     // LightSaturation=159
-     // LightRadius=8.000000
      Mesh=SkeletalMesh'tk_MarioLuigi.MarioLuigi.SuperMario'
      DrawScale=6.100000
      PrePivot=(Z=-35.000000)

@@ -4,6 +4,8 @@ class MarioProjectiles extends Projectile
 var byte Bounces;
 var array<StaticMesh> ProjectileMesh;
 var array<Texture> ProjectileSkin;
+var config float NewDamage;
+var vector Dir;
 
 replication
 {
@@ -13,7 +15,9 @@ replication
 
 simulated function PostBeginPlay()
 {
-	local vector Dir;
+	Super.PostBeginPlay();
+	Damage = NewDamage;
+	
 	if ( bDeleteMe || IsInState('Dying') )
 		return;
 
@@ -79,8 +83,6 @@ simulated function PostBeginPlay()
 
 function ProcessTouch (Actor Other, Vector HitLocation)
 {
-	local int hitdamage;
-
 	if (Other==none || Other == instigator )
 		return;
 
@@ -90,9 +92,8 @@ function ProcessTouch (Actor Other, Vector HitLocation)
 		Other.Destroy();
 	else if (MarioProjectiles(Other) == None)
 	{
-		Hitdamage = Damage * 0.00002 * (DrawScale**3) * speed;
-		if ( (HitDamage > 3) && (speed > 150) && ( Role == ROLE_Authority ))
-			Other.TakeDamage(hitdamage, instigator,HitLocation, (35000.0 * Normal(Velocity)*DrawScale), MyDamageType );
+		if ( (Damage > 3) && (speed > 150) && ( Role == ROLE_Authority ))
+			Other.TakeDamage(Damage, instigator,HitLocation, (35000.0 * Normal(Velocity)*DrawScale), MyDamageType );
 	}
 }
 
@@ -105,16 +106,14 @@ simulated function Landed(vector HitNormal)
 simulated function HitWall (vector HitNormal, actor Wall)
 {
 	local vector RealHitNormal;
-	local int HitDamage;
 
 	if ( !Wall.bStatic && !Wall.bWorldGeometry && ((Mover(Wall) == None) || Mover(Wall).bDamageTriggered) )
 	{
 		if ( Level.NetMode != NM_Client )
 		{
-			Hitdamage = Damage * 0.00002 * (DrawScale**3) * speed;
 			if ( Instigator == None || Instigator.Controller == None )
 				Wall.SetDelayedDamageInstigatorController( InstigatorController );
-			Wall.TakeDamage( Hitdamage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
+			Wall.TakeDamage( Damage, instigator, Location, MomentumTransfer * Normal(Velocity), MyDamageType);
 		}
 	}
 
@@ -202,6 +201,7 @@ defaultproperties
      Speed=1300.000000
      MaxSpeed=2000.000000
      Damage=1000.000000
+	 NewDamage=50.000000
      MyDamageType=Class'tk_MarioLuigi.DamTypeMarioBlock'
 	 ImpactSound=Sound'tK_BaseM.Titan.Rockhit'
 	 DrawType=DT_StaticMesh
