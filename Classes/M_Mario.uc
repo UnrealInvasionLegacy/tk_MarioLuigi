@@ -1,346 +1,98 @@
-class M_Mario extends Monster 
+class M_Mario extends tk_Monster
 	config(tk_Monsters);
 
 #EXEC OBJ LOAD FILE="Resources/tk_MarioLuigi_rc.u" PACKAGE="tk_MarioLuigi"
 
-var config int nLaughFrequency;
+var array<class<Projectile> > ProjectileClass;
+var int AimError;
+var Name RangedAttacks[4];
+var Name HitAnims[4];
+var Sound FootStep[4];
 
-var name DeathAnim[4];
-var byte sprayoffset;
-var	float Momentum;
-var	class<DamageType>  MyDamageType;
-var	vector				mHitLocation,mHitNormal;
-var	rotator				mHitRot;
-
-var FireProperties RocketFireProperties;
-var class<Ammunition> RocketAmmoClass;
-var Ammunition RocketAmmo;
-var()  bool	bNoTelefrag; 
-var()	float	InvalidityMomentumSize;
-var() bool bNoCrushVehicle;
-var()  array<class<DamageType> >	ReducedDamTypes;
-var()  float	ReducedDamPct;
-var()  array<class<DamageType> >	WeakDamTypes;
-var()  float	WeakDamPct;
-var()  bool	bReduceDamPlayerNum;
-var		bool				bStomped,bThrowed;
-var		int					ThrowCount;
-
-var() name StepEvent;
-var() sound Step;
-var() sound StompSound;
-var() sound Laugh;
-
-replication
+function PostBeginPlay()
 {
-  reliable if ( Role == ROLE_Authority )
-    mHitLocation, mHitNormal;
+     Super.PostBeginPlay();
+     Health = HP;
+     PlaySound(Sound'marioriff');
 }
 
-event PostBeginPlay()
+function Notify_FireProjectile()
 {
-	Super.PostBeginPlay();
-        RocketAmmo=spawn(RocketAmmoClass);
-        PlaySound(Sound'marioriff');
-}
+	local vector X, Y, Z, FireStart;
+	local coords BoneLocation;
 
-event EncroachedBy( actor Other )
-{
-	local float Speed;
-	local vector Dir,Momentumb;
-	if ( xPawn(Other) != None && bNoTelefrag)
-		return;
-	if(bNoCrushVehicle && Vehicle(Other)!=none)
+	if (Controller != None)
 	{
-		Speed=VSize(Vehicle(Other).Velocity);
-		Dir=Normal(Vehicle(Other).Velocity);
-		log("dot=" $ Dir dot Normal(Location-Other.Location));
-
-		if(Dir dot Normal(Location-Other.Location)>0)
-		{
-			Dir=-Dir;
-			MomentumB=Dir*Speed*Mass*0.1;
-			Vehicle(Other).KAddImpulse(MomentumB, Other.location);
-		}
+		BoneLocation = GetBoneCoords('Bone_weapon');
+		FireStart = GetFireStart(X,Y,Z);
+		Spawn(ProjectileClass[Rand(ProjectileClass.Length)],self,,BoneLocation.Origin,Controller.AdjustAim(SavedFireProperties,FireStart,AimError));
+		PlaySound(FireSound,SLOT_Interact,255);
 	}
-
-	super.EncroachedBy(Other);
 }
 
-function PlayVictory()
+function RangedAttack(Actor A)
 {
-	Controller.bPreparingMove = true;
-	Acceleration = vect(0,0,0);
-	bShotAnim = true;
-    	PlaySound(Sound'mariofinish');
-	SetAnimAction('gesture_cheer');
-	Controller.Destination = Location;
-	Controller.GotoState('TacticalMove','WaitForAnim');
-}
+	if (bShotAnim)
+     {
+          return;
+     }
 
-function PlaySoundINI()
-{
-	PlaySound(Sound'fireball');
-}
-
-function SpawnRocket()
-{
-	local vector RotX,RotY,RotZ,StartLoc;
-	local MarioBigBlock R;
-
-	GetAxes(Rotation, RotX, RotY, RotZ);
-	StartLoc=GetFireStart(RotX, RotY, RotZ);
-	if ( !RocketFireProperties.bInitialized )
+	if (Physics == PHYS_Swimming)
 	{
-		RocketFireProperties.AmmoClass = RocketAmmo.Class;
-		RocketFireProperties.ProjectileClass = RocketAmmo.default.ProjectileClass;
-		RocketFireProperties.WarnTargetPct = RocketAmmo.WarnTargetPct;
-		RocketFireProperties.MaxRange = RocketAmmo.MaxRange;
-		RocketFireProperties.bTossed = RocketAmmo.bTossed;
-		RocketFireProperties.bTrySplash = RocketAmmo.bTrySplash;
-		RocketFireProperties.bLeadTarget = RocketAmmo.bLeadTarget;
-		RocketFireProperties.bInstantHit = RocketAmmo.bInstantHit;
-		RocketFireProperties.bInitialized = true;
+		SetAnimAction(IdleSwimAnim);
 	}
+	else
+	{
+		SetAnimAction(RangedAttacks[Rand(4)]);
+		Controller.bPreparingMove = true;
+		Acceleration = vect(0,0,0);
+		bShotAnim = true;
+	}
+}
 
-	R=MarioBigBlock(Spawn(RocketAmmo.ProjectileClass,,,StartLoc,Controller.AdjustAim(RocketFireProperties,StartLoc,600)));
+simulated function PlayDirectionalDeath(Vector HitLoc)
+{
+	Super.PlayDirectionalDeath(HitLoc);
 }
 
 simulated function PlayDirectionalHit(Vector HitLoc)
 {
-    local Vector X,Y,Z, Dir;
-
-	if ( DrivenVehicle != None )
-		return;
-
-    GetAxes(Rotation, X,Y,Z);
-    HitLoc.Z = Location.Z;
-
-    // random
-    if ( VSize(Location - HitLoc) < 1.0 )
-    {
-        Dir = VRand();
-    }
-    // hit location based
-    else
-    {
-        Dir = -Normal(Location - HitLoc);
-    }
-
-    if ( Dir Dot X > 0.7 || Dir == vect(0,0,0))
-    {
-        PlayAnim('HitF',, 0.1);
-    }
-    else if ( Dir Dot X < -0.7 )
-    {
-        PlayAnim('HitB',, 0.1);
-    }
-    else if ( Dir Dot Y > 0 )
-    {
-        PlayAnim('HitL',, 0.1);
-    }
-    else
-    {
-        PlayAnim('HitR',, 0.1);
-    }
+	PlayAnim(HitAnims[Rand(4)],, 0.1);
+     Notify_FireProjectile();
 }
 
-function bool SameSpeciesAs(Pawn P)
+function PlayMoverHitSound()
 {
-	return ( Monster(P) != none &&
-		(P.IsA('SMPTitan') || P.IsA('SMPQueen') || P.IsA('Monster')|| P.IsA('Skaarj') || P.IsA('SkaarjPupae') || P.IsA('LuciferBOSS')));
+	PlaySound(HitSound[0], SLOT_Interact);
 }
 
-
-
-function RangedAttack(Actor A)
+simulated function RunStep()
 {
-	local float decision;
-	if ( bShotAnim )
-		return;
-	bShotAnim=true;
-	decision = FRand();
-
-	if ( Physics == PHYS_Swimming )
-		SetAnimAction('Swim_Tread');
-	else if ( Velocity == vect(0,0,0) )
-	{
-		if (decision < 0.35)
-		{
-			SetAnimAction('Weapon_Switch');
-                      DoFireEffect();
-		}
-		else
-		{
-			sprayoffset = 0;
-			SetAnimAction('Weapon_Switch');
-                       DoFireEffect();
-		}
-		Acceleration = vect(0,0,0);
-	}
-	else
-	{
-		if (decision < 0.35)
-		{
-			SetAnimAction('Weapon_Switch');
-			DoFireEffect();
-
-		}
-		else
-		{
-			sprayoffset = 0;
-			SetAnimAction('Weapon_Switch');
-			DoFireEffect();
-			
-
-
-		}
-	}
-}
-
-function TakeDamage( int Damage, Pawn instigatedBy, Vector hitlocation,
-						vector momentum, class<DamageType> damageType)
-{
-	local int i;
-	local float DamageProb;
-
-	if(InvalidityMomentumSize>VSize(momentum))
-		momentum=vect(0,0,0);
-
-	for(i=0;i<ReducedDamTypes.length;i++)
-		if(damageType==ReducedDamTypes[i])
-			Damage*=ReducedDamPct;
-
-	for(i=0;i<WeakDamTypes.length;i++)
-		if(damageType==WeakDamTypes[i])
-			Damage*=WeakDamPct;
-
-
-	if(Damage>0)
-	{
-		if(bReduceDamPlayerNum)
-		{
-			DamageProb=float(Damage)/(Level.Game.NumPlayers+Level.Game.NumBots);
-			if(DamageProb<1 && Frand()<DamageProb)
-				Damage=1;
-			else
-				Damage=DamageProb;
-
-		}
-	}
-
-	if(bNoCrushVehicle && class<DamTypeRoadkill>(damageType)!=none && Damage>10)
-		Damage=10;
-	super.TakeDamage(Damage,instigatedBy,hitlocation,momentum,damageType);
-}
-
-
-function FootStep()
-{
-	local pawn Thrown;
-
-	TriggerEvent(StepEvent,Self, Instigator);
-	foreach CollidingActors( class 'Pawn', Thrown,Mass*0.5)
-		ThrowOther(Thrown,Mass/12);
-	PlaySound(Step, SLOT_Interact, 24);
-}
-
-function ThrowOther(Pawn Other,int Power)
-{
-	local float dist, shake;
-	local vector Momentumc;
-
-
-	if ( Other.mass >= Mass )
-		return;
-
-	if (xPawn(Other)==none)
-	{
-		if ( Power<400 || (Other.Physics != PHYS_Walking) )
-			return;
-		dist = VSize(Location - Other.Location);
-		if (dist > Mass)
-			return;
-	}
-	else
-	{
-
-		dist = VSize(Location - Other.Location);
-		shake = 0.4*FMax(500, Mass - dist);
-		shake=FMin(2000,shake);
-		if ( dist > Mass )
-			return;
-		if(Other.Controller!=none)
-			Other.Controller.ShakeView( vect(0.0,0.02,0.0)*shake, vect(0,1000,0),0.003*shake, vect(0.02,0.02,0.02)*shake, vect(1000,1000,1000),0.003*shake);
-
-		if ( Other.Physics != PHYS_Walking )
-			return;
-	}
-
-	Momentumc = 100 * Vrand();
-	Momentumc.Z = FClamp(0,Power,Power - ( 0.4 * dist + Max(10,Other.Mass)*10));
-	Other.AddVelocity(Momentumc);
-}
-
-simulated function vector GetFireStart(vector X, vector Y, vector Z)
-{
-		return Location + CollisionRadius * ( X + 0.4 * Y + 0.1 * Z );
-}
-
-simulated function InitEffects()
-{
-	local vector RotX,RotY,RotZ;
-	local vector FireStartLoc;
-
-    // don't even spawn on server
-    if ( Level.NetMode == NM_DedicatedServer )
-		return;
-	GetAxes(Rotation, RotX, RotY, RotZ);
-	FireStartLoc=GetFireStart(RotX, RotY, RotZ);
-
-}
-
-simulated function DoFireEffect() 
-{
-
-
-SpawnRocket(); 
-PlaySoundINI();
-
-}
-
-simulated function PlayDying(class<DamageType> DamageType, vector HitLoc)
-{
-    bCanTeleport = false; 
-    bReplicateMovement = false;
-    bTearOff = true;
-    bPlayedDeath = true;
-
-	LifeSpan = RagdollLifeSpan;
-    GotoState('Dying');
-		
-	Velocity += TearOffMomentum;
-    BaseEyeHeight = Default.BaseEyeHeight;
-    SetInvisibility(0.0);
-    PlayDirectionalDeath(HitLoc);
-    SetPhysics(PHYS_Falling);
-    PlaySound(DeathSound[Rand(4)], SLOT_Pain,1000*TransientSoundVolume, true,800); //correct code
+	PlaySound(FootStep[Rand(4)], SLOT_Interact, 8);
 }
 
 defaultproperties
 {
-     nLaughFrequency=8
-     DeathAnim(0)="DeathF"
-     DeathAnim(1)="DeathL"
-     DeathAnim(2)="DeathR"
-     RocketAmmoClass=Class'tk_MarioLuigi.MarioAmmo'
-     bNoTeleFrag=True
-     InvalidityMomentumSize=100000.000000
-     bNoCrushVehicle=True
-     Step=Sound'tk_MarioLuigi.MarioLuigi.step1t'
-     Laugh=Sound'tk_MarioLuigi.MarioLuigi.blueRoom'
-     bCanDodge=False
-     bBoss=True
+     Health=500
+     HP=500
+     ProjectileClass(0)=Class'tk_MarioLuigi.MarioProjectiles'
+     AimError=400
+     RangedAttacks(0)="gesture_halt"
+     RangedAttacks(1)="Weapon_Switch"
+     RangedAttacks(2)="gesture_cheer"
+     RangedAttacks(3)="gesture_halt"
+     HitAnims(0)="HitF"
+     HitAnims(1)="HitB"
+     HitAnims(2)="HitL"
+     HitAnims(3)="HitR"
+     Footstep(0)=Sound'tk_MarioLuigi.MarioLuigi.step1t'
+     Footstep(1)=Sound'tk_MarioLuigi.MarioLuigi.step1t'
+     Footstep(2)=Sound'tk_MarioLuigi.MarioLuigi.step1t'
+     Footstep(3)=Sound'tk_MarioLuigi.MarioLuigi.step1t'
+     bMeleeFighter=false
+     bCanDodge=true
+     bBoss=false
+     DodgeSkillAdjust=1.000000
      HitSound(0)=Sound'tk_MarioLuigi.MarioLuigi.MarioCoin'
      HitSound(1)=Sound'tk_MarioLuigi.MarioLuigi.mariojump'
      HitSound(2)=Sound'tk_MarioLuigi.MarioLuigi.MarioCoin'
@@ -349,51 +101,68 @@ defaultproperties
      DeathSound(1)=Sound'tk_MarioLuigi.MarioLuigi.gameover'
      DeathSound(2)=Sound'tk_MarioLuigi.MarioLuigi.mariodie2'
      DeathSound(3)=Sound'tk_MarioLuigi.MarioLuigi.mariodie3'
-     AmmunitionClass=Class'tk_MarioLuigi.MarioAmmo'
-     ScoringValue=10
-     MeleeRange=100.000000
+     ChallengeSound(0)=Sound'tk_MarioLuigi.MarioLuigi.blueRoom'
+     ChallengeSound(1)=Sound'tk_MarioLuigi.MarioLuigi.blueRoom'
+     ChallengeSound(2)=Sound'tk_MarioLuigi.MarioLuigi.blueRoom'
+     ChallengeSound(3)=Sound'tk_MarioLuigi.MarioLuigi.blueRoom'
+     FireSound=Sound'tk_MarioLuigi.MarioLuigi.fireball'
+     IdleHeavyAnim="Idle_Rifle"
+     IdleRifleAnim="Idle_Rifle"
+     FireHeavyRapidAnim="Biggun_Aimed"
+     FireHeavyBurstAnim="Biggun_Burst"
+     FireRifleRapidAnim="Rifle_Aimed"
+     FireRifleBurstAnim="Rifle_Burst"
+     ScoringValue=25
+     bCanSwim=true
+     MeleeRange=150.000000
      GroundSpeed=850.000000
      AccelRate=2000.000000
      JumpZ=500.000000
-     Health=900
      MovementAnims(0)="WalkF"
-     MovementAnims(1)="WalkF"
-     MovementAnims(2)="WalkF"
-     MovementAnims(3)="WalkF"
+     MovementAnims(1)="WalkB"
+     MovementAnims(2)="WalkL"
+     MovementAnims(3)="WalkR"
      TurnLeftAnim="TurnL"
      TurnRightAnim="TurnR"
-     WalkAnims(1)="WalkF"
-     WalkAnims(2)="WalkF"
-     WalkAnims(3)="WalkF"
-     AirAnims(0)="Jump_Takeoff"
-     AirAnims(1)="Jump_Takeoff"
-     AirAnims(2)="Jump_Takeoff"
-     AirAnims(3)="Jump_Takeoff"
-     TakeoffAnims(0)="Jump_Takeoff"
-     TakeoffAnims(1)="Jump_Takeoff"
-     TakeoffAnims(2)="Jump_Takeoff"
-     TakeoffAnims(3)="Jump_Takeoff"
-     LandAnims(0)="Jump_Land"
-     LandAnims(1)="Jump_Land"
-     LandAnims(2)="Jump_Land"
-     LandAnims(3)="Jump_Land"
+     CrouchAnims(0)="CrouchF"
+     CrouchAnims(1)="CrouchB"
+     CrouchAnims(2)="CrouchL"
+     CrouchAnims(3)="CrouchR"
+     AirAnims(0)="JumpF_Mid"
+     AirAnims(1)="JumpB_Mid"
+     AirAnims(2)="JumpL_Mid"
+     AirAnims(3)="JumpR_Mid"
+     TakeoffAnims(0)="JumpF_Takeoff"
+     TakeoffAnims(1)="JumpB_Takeoff"
+     TakeoffAnims(2)="JumpL_Takeoff"
+     TakeoffAnims(3)="JumpR_Takeoff"
+     LandAnims(0)="JumpF_Land"
+     LandAnims(1)="JumpB_Land"
+     LandAnims(2)="JumpL_Land"
+     LandAnims(3)="JumpR_Land"
+     DoubleJumpAnims(0)="DoubleJumpF"
+     DoubleJumpAnims(1)="DoubleJumpB"
+     DoubleJumpAnims(2)="DoubleJumpL"
+     DoubleJumpAnims(3)="DoubleJumpR"
      DodgeAnims(0)="DodgeF"
-     DodgeAnims(1)="DodgeF"
-     DodgeAnims(2)="DodgeF"
-     DodgeAnims(3)="DodgeF"
-     AirStillAnim="Jump_Takeoff"
+     DodgeAnims(1)="DodgeB"
+     DodgeAnims(2)="DodgeL"
+     DodgeAnims(3)="DodgeR"
+     AirStillAnim="Jump_Mid"
      TakeoffStillAnim="Jump_Takeoff"
-     IdleWeaponAnim="Idle_Biggun"
-     IdleRestAnim="Idle_Character02"
-     AmbientSound=Sound'tk_MarioLuigi.MarioLuigi.blueRoom'
+     CrouchTurnRightAnim="Crouch_TurnR"
+     CrouchTurnLeftAnim="Crouch_TurnL"
+     IdleCrouchAnim="Idle_Rifle"
+     IdleSwimAnim="Idle_Rifle"
+     IdleWeaponAnim="Idle_Rifle"
+     IdleRestAnim="Idle_Rifle"
+     IdleChatAnim="Idle_Rifle"
      Mesh=SkeletalMesh'tk_MarioLuigi.MarioLuigi.SuperMario'
      DrawScale=6.100000
      PrePivot=(Z=-35.000000)
      Skins(0)=Texture'tk_MarioLuigi.MarioLuigi.marioheadA'
      Skins(1)=Texture'tk_MarioLuigi.MarioLuigi.marioheadA'
-     TransientSoundVolume=255.000000
-     CollisionRadius=110.000000
-     CollisionHeight=305.000000
-     Mass=10000.000000
-     RotationRate=(Yaw=60000)
+     CollisionRadius=200.000000
+     CollisionHeight=290.000000
+     Mass=2000.000000
 }

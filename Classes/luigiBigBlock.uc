@@ -1,4 +1,4 @@
-class luigiBigBlock extends MarioBigBlock;
+class luigiBigBlock extends MarioProjectiles;
 
 defaultproperties
 {
